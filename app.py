@@ -182,14 +182,29 @@ def add_equipment():
                 notes=form.notes.data,
                 image=new_image if new_image else None # Связываем с изображением
             )
+
+            asset.responsible_persons = [] 
+
+            selected_persons_data = form.responsible_persons.data
+            selected_persons_ids_to_query = []
+
+            # Гарантируем, что selected_persons_data является списком ID
+            if selected_persons_data is not None:
+                if isinstance(selected_persons_data, list):
+                    # Если это уже список, используем его
+                    selected_persons_ids_to_query = selected_persons_data
+                else:
+                    # Если это одиночное значение (например, int), преобразуем в список
+                    selected_persons_ids_to_query = [selected_persons_data]
+
+            if selected_persons_ids_to_query:
+                # Запрашиваем ResponsiblePerson объекты по их ID
+                selected_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(selected_persons_ids_to_query)).all()
+                # Присваиваем обновленный список ответственных лиц
+                asset.responsible_persons.extend(selected_persons)
+
             db.session.add(asset)
             db.session.flush() # Получаем ID для связей many-to-many
-
-            # Добавление ответственных лиц (многие ко многим)
-            if form.responsible_persons.data:
-                selected_persons_ids = form.responsible_persons.data
-                selected_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(selected_persons_ids)).all()
-                asset.responsible_persons.extend(selected_persons)
 
             db.session.commit()
             flash('Оборудование успешно добавлено!', 'success')
@@ -277,11 +292,24 @@ def edit_equipment(asset_id):
             asset.status = form.status.data
             asset.notes = form.notes.data
 
-            # Обновление ответственных лиц
-            asset.responsible_persons = [] # Сбрасываем текущие связи
-            if form.responsible_persons.data:
-                selected_persons_ids = form.responsible_persons.data
-                selected_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(selected_persons_ids)).all()
+            asset.responsible_persons = [] 
+
+            selected_persons_data = form.responsible_persons.data
+            selected_persons_ids_to_query = []
+
+            # Гарантируем, что selected_persons_data является списком ID
+            if selected_persons_data is not None:
+                if isinstance(selected_persons_data, list):
+                    # Если это уже список, используем его
+                    selected_persons_ids_to_query = selected_persons_data
+                else:
+                    # Если это одиночное значение (например, int), преобразуем в список
+                    selected_persons_ids_to_query = [selected_persons_data]
+
+            if selected_persons_ids_to_query:
+                # Запрашиваем ResponsiblePerson объекты по их ID
+                selected_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(selected_persons_ids_to_query)).all()
+                # Присваиваем обновленный список ответственных лиц
                 asset.responsible_persons.extend(selected_persons)
             
             db.session.commit()
@@ -338,7 +366,8 @@ def view_equipment(asset_id):
                            title=f'Оборудование: {asset.name}', 
                            asset=asset, 
                            maintenance_form=maintenance_form, 
-                           current_user=current_user)
+                           current_user=current_user,
+                           MaintenanceLog=MaintenanceLog) # <-- ДОБАВЬТЕ ЭТУ СТРОКУ
 
 
 @app.route('/equipment/delete/<int:asset_id>', methods=['POST'])

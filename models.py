@@ -1,7 +1,7 @@
 from app import db # Импортируем db из app.py
 from flask_login import UserMixin
 from datetime import datetime
-from werkzeug.security import generate_password_hash # Импортируем явно
+from werkzeug.security import generate_password_hash, check_password_hash # Импортируем явно
 
 # Вспомогательная таблица для связи многие-ко-многим между Asset и ResponsiblePerson
 asset_responsible_person_association = db.Table(

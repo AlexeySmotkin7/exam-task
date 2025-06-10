@@ -27,7 +27,7 @@ class AssetForm(FlaskForm):
     photo = FileField('Фотография', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
     # MultiSelectField можно использовать для ответственных лиц, но для простоты пока пропустим.
     # Или используем простой SelectMultipleField и передаем id
-    responsible_persons = SelectField('Ответственные лица', coerce=int, multiple=True)
+    responsible_persons = SelectField('Ответственные лица', coerce=int)
 
     submit = SubmitField('Сохранить', render_kw={"class": "btn btn-primary"})
 
