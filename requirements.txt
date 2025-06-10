@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Pillow          # Для обработки изображений
+qrcode          # Для генерации QR-кодов
+python-dotenv   # Опционально, для загрузки конфига из .env
