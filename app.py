@@ -301,3 +301,41 @@ def edit_equipment(asset_id):
     
     # Если GET запрос или валидация не прошла
     return render_template('equipment_form.html', title='Редактировать оборудование', form=form, asset=asset)
+
+@app.route('/equipment/<int:asset_id>', methods=['GET', 'POST'])
+@login_required # Доступна всем авторизованным пользователям
+def view_equipment(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    maintenance_form = MaintenanceLogForm()
+
+    # Dynamic choices for responsible_persons must be set before validation
+    maintenance_form.log_date.default = datetime.now().date() # Установить дату по умолчанию
+    if request.method == 'GET':
+        maintenance_form.process() # Применить default значение для GET запроса
+
+    if request.method == 'POST' and maintenance_form.validate_on_submit():
+        # Проверка прав для добавления записи об обслуживании
+        if not (current_user.is_admin or current_user.is_tech_specialist):
+            flash("У вас недостаточно прав для добавления записи об обслуживании.", "danger")
+            return redirect(url_for('view_equipment', asset_id=asset.id))
+        
+        try:
+            log = MaintenanceLog(
+                asset_id=asset.id,
+                log_date=maintenance_form.log_date.data,
+                maintenance_type=maintenance_form.maintenance_type.data,
+                comment=maintenance_form.comment.data
+            )
+            db.session.add(log)
+            db.session.commit()
+            flash('Запись об обслуживании успешно добавлена!', 'success')
+            return redirect(url_for('view_equipment', asset_id=asset.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Ошибка при добавлении записи об обслуживании: {e}', 'danger')
+
+    return render_template('equipment_detail.html', 
+                           title=f'Оборудование: {asset.name}', 
+                           asset=asset, 
+                           maintenance_form=maintenance_form, 
+                           current_user=current_user)

@@ -61,3 +61,10 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти', render_kw={"class": "btn btn-primary"}) # Добавим класс Bootstrap
+
+
+class MaintenanceLogForm(FlaskForm):
+    log_date = DateField('Дата обслуживания', format='%Y-%m-%d', validators=[DataRequired()], widget=DateInput())
+    maintenance_type = StringField('Тип обслуживания', validators=[DataRequired(), Length(min=2, max=128)])
+    comment = TextAreaField('Комментарий', validators=[DataRequired(), Length(min=5, max=5000)])
+    submit = SubmitField('Добавить запись', render_kw={"class": "btn btn-success"})

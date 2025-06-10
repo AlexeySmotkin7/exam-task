@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Информация об оборудовании: {{ asset.name }}</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        {% if asset.image %}
+            <img src="{{ url_for('static', filename='uploads/' + asset.image.filename) }}" class="img-fluid rounded mb-3" alt="Фотография {{ asset.name }}">
+        {% else %}
+            <img src="{{ url_for('static', filename='images/placeholder.png') }}" class="img-fluid rounded mb-3" alt="Нет фотографии">
+        {% endif %}
+        
+        {# QR Code for Variant 3 #}
+        {% if asset.inventory_number %}
+        <div class="text-center mt-3 mb-3">
+            <h5>QR-код инвентарного номера</h5>
+            <img src="{{ url_for('generate_qr_code', inventory_number=asset.inventory_number) }}" 
+                 alt="QR Code for {{ asset.inventory_number }}" class="img-fluid" style="max-width: 150px;">
+            <p><small class="text-muted">Сканируйте для быстрого доступа к информации.</small></p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                Основные сведения
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Инвентарный номер:</strong> {{ asset.inventory_number }}</li>
+                <li class="list-group-item"><strong>Категория:</strong> {{ asset.category.name if asset.category else 'Неизвестно' }}</li>
+                <li class="list-group-item"><strong>Дата покупки:</strong> {{ asset.purchase_date.strftime('%d.%m.%Y') }}</li>
+                <li class="list-group-item"><strong>Стоимость:</strong> {{ asset.cost }} руб.</li>
+                <li class="list-group-item"><strong>Статус:</strong> {{ asset.status }}</li>
+                <li class="list-group-item"><strong>Примечание:</strong> {{ asset.notes if asset.notes else 'Нет примечаний' }}</li>
+                <li class="list-group-item">
+                    <strong>Ответственные лица:</strong>
+                    {% if asset.responsible_persons %}
+                        <ul>
+                            {% for person in asset.responsible_persons %}
+                                <li>{{ person.full_name }} ({{ person.position if person.position else 'Должность не указана' }})</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        Нет ответственных лиц.
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+
+        <h3 class="mb-3">История обслуживания</h3>
+        {% if asset.maintenance_logs.all() %}
+        <div class="table-responsive mb-4">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип обслуживания</th>
+                        <th>Комментарий</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in asset.maintenance_logs.order_by(asset.maintenance_logs.c.log_date.desc()).all() %}
+                    <tr>
+                        <td>{{ log.log_date.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ log.maintenance_type }}</td>
+                        <td>{{ log.comment }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info" role="alert">
+            Записей об обслуживании нет.
+        </div>
+        {% endif %}
+
+        {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_tech_specialist) %}
+        <h4 id="add-maintenance" class="mb-3">Добавить запись об обслуживании</h4>
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="POST">
+                    {{ maintenance_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ maintenance_form.log_date.label(class="form-label") }}
+                        {{ maintenance_form.log_date(class="form-control datepicker", placeholder="ГГГГ-ММ-ДД") }}
+                        {% for error in maintenance_form.log_date.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ maintenance_form.maintenance_type.label(class="form-label") }}
+                        {{ maintenance_form.maintenance_type(class="form-control", placeholder="Например: Плановое ТО, Ремонт") }}
+                        {% for error in maintenance_form.maintenance_type.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ maintenance_form.comment.label(class="form-label") }}
+                        {{ maintenance_form.comment(class="form-control", rows="3", placeholder="Подробное описание работ") }}
+                        {% for error in maintenance_form.comment.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {{ maintenance_form.submit() }}
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="mt-4">
+            <a href="{{ url_for('main_page') }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Назад к списку</a>
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('edit_equipment', asset_id=asset.id) }}" class="btn btn-warning ms-2"><i class="bi bi-pencil"></i> Редактировать</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+
+<script>
+    $(document).ready(function() {
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            language: 'ru',
+            autoclose: true,
+            todayHighlight: true
+        });
+    });
+</script>
+{% endblock %}
