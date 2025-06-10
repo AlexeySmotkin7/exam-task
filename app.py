@@ -26,7 +26,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['QR_CODE_FOLDER'], exist_ok=True)
 
 # Импортируем модели и формы после инициализации db
-from models import User, Role, Category, Image, Asset, MaintenanceLog, ResponsiblePerson, AssetResponsiblePerson
+from models import User, Role, Category, Image, Asset, MaintenanceLog, ResponsiblePerson
 from forms import LoginForm, AssetForm, MaintenanceLogForm, AssetFilterForm # Будут добавлены позже
 
 @login_manager.user_loader
@@ -54,10 +54,23 @@ def main_page():
     # Эта страница будет доработана в следующих коммитах
     return render_template('equipment_list.html', title='Список оборудования')
 
+# Маршруты для входа и выхода
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # Эта страница будет доработана в следующем коммите
-    return render_template('login.html', title='Вход')
+    if current_user.is_authenticated:
+        return redirect(url_for('main_page'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Невозможно аутентифицироваться с указанными логином и паролем.', 'danger')
+            return render_template('login.html', title='Вход', form=form)
+        login_user(user, remember=form.remember_me.data)
+        flash('Вы успешно вошли в систему!', 'success')
+        next_page = request.args.get('next')
+        return redirect(next_page or url_for('main_page'))
+    return render_template('login.html', title='Вход', form=form)
 
 @app.route('/logout')
 @login_required

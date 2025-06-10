@@ -1,6 +1,5 @@
 from app import app, db
-from models import User, Role, Category, ResponsiblePerson
-from werkzeug.security import generate_password_hash # Импортируем явно
+from models import User, Role, Category, ResponsiblePerson, generate_password_hash
 
 def seed_data():
     with app.app_context():

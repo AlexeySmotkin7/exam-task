@@ -22,3 +22,10 @@ class MaintenanceLogForm(FlaskForm):
 class AssetFilterForm(FlaskForm):
     # Будет наполняться
     pass
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=2, max=64)])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    remember_me = BooleanField('Запомнить меня')
+    submit = SubmitField('Войти', render_kw={"class": "btn btn-primary"}) # Добавим класс Bootstrap
