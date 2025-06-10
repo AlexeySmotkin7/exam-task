@@ -48,11 +48,39 @@ def role_required(*roles_allowed):
         return decorated_view
     return wrapper
 
-# Простые маршруты заглушки
-@app.route('/')
+@app.route('/', methods=['GET'])
 def main_page():
-    # Эта страница будет доработана в следующих коммитах
-    return render_template('equipment_list.html', title='Список оборудования')
+    form = AssetFilterForm(request.args)
+    query = Asset.query.order_by(Asset.purchase_date.desc()) # Сортировка по дате покупки
+
+    # Применение фильтров
+    if form.validate_on_submit(): # Валидация при GET запросе с submit
+        # Для GET запросов, данные уже в request.args, поэтому form.data уже заполнены
+        pass 
+
+    if form.category.data and form.category.data != 0: # 0 или '' для 'Все'
+        query = query.filter(Asset.category_id == form.category.data)
+    
+    if form.status.data:
+        query = query.filter(Asset.status == form.status.data)
+    
+    if form.purchase_date_start.data:
+        query = query.filter(Asset.purchase_date >= form.purchase_date_start.data)
+
+    if form.purchase_date_end.data:
+        query = query.filter(Asset.purchase_date <= form.purchase_date_end.data)
+
+    page = request.args.get('page', 1, type=int)
+    pagination = query.paginate(page=page, per_page=app.config['PER_PAGE'], error_out=False)
+    assets = pagination.items
+
+    return render_template('equipment_list.html', 
+                           title='Список оборудования', 
+                           assets=assets, 
+                           pagination=pagination, 
+                           form=form, 
+                           current_user=current_user)
+
 
 # Маршруты для входа и выхода
 @app.route('/login', methods=['GET', 'POST'])

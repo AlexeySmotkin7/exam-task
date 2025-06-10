@@ -9,3 +9,4 @@ class Config:
     QR_CODE_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static', 'qrcodes')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     PER_PAGE = 10 # Записей на страницу для пагинации
+    WTF_CSRF_ENABLED = True

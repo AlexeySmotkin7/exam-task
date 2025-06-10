@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Список оборудования</h1>
+
+<div class="row mb-4">
+    <div class="col-md-9">
+        <form method="GET" class="row row-cols-lg-auto g-3 align-items-center">
+            {{ form.hidden_tag() }}
+            <div class="col-12">
+                {{ form.category.label(class="visually-hidden") }}
+                {{ form.category(class="form-select") }}
+            </div>
+            <div class="col-12">
+                {{ form.status.label(class="visually-hidden") }}
+                {{ form.status(class="form-select") }}
+            </div>
+            <div class="col-12">
+                {{ form.purchase_date_start.label(class="form-label visually-hidden") }}
+                <input type="text" class="form-control datepicker" name="purchase_date_start" placeholder="Дата от (ГГГГ-ММ-ДД)" value="{{ request.args.get('purchase_date_start', '') }}">
+            </div>
+            <div class="col-12">
+                {{ form.purchase_date_end.label(class="form-label visually-hidden") }}
+                <input type="text" class="form-control datepicker" name="purchase_date_end" placeholder="Дата до (ГГГГ-ММ-ДД)" value="{{ request.args.get('purchase_date_end', '') }}">
+            </div>
+            <div class="col-12">
+                {{ form.submit }}
+            </div>
+            <div class="col-12">
+                <a href="{{ url_for('main_page') }}" class="btn btn-outline-secondary">Сбросить</a>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-3 text-md-end">
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <a href="{{ url_for('add_equipment') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Добавить оборудование</a>
+        {% endif %}
+    </div>
+</div>
+
+
+{% if assets %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Инвентарный номер</th>
+                <th>Категория</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in assets %}
+            <tr>
+                <td>{{ asset.name }}</td>
+                <td>{{ asset.inventory_number }}</td>
+                <td>{{ asset.category.name if asset.category else 'N/A' }}</td>
+                <td>{{ asset.status }}</td>
+                <td>
+                    <a href="{{ url_for('view_equipment', asset_id=asset.id) }}" class="btn btn-info btn-sm" title="Просмотр">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                    <a href="{{ url_for('edit_equipment', asset_id=asset.id) }}" class="btn btn-warning btn-sm mx-1" title="Редактировать">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-asset-id="{{ asset.id }}" data-asset-name="{{ asset.name }}" title="Удалить">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                    {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_tech_specialist) %}
+                    <a href="{{ url_for('view_equipment', asset_id=asset.id) }}#add-maintenance" class="btn btn-success btn-sm ms-1" title="Добавить обслуживание">
+                        <i class="bi bi-tools"></i>
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main_page', page=pagination.prev_num, category=request.args.get('category'), status=request.args.get('status'), purchase_date_start=request.args.get('purchase_date_start'), purchase_date_end=request.args.get('purchase_date_end')) }}" aria-label="Previous">
+                <span aria-hidden="true">«</span>
+            </a>
+        </li>
+        {% for page_num in pagination.iter_pages() %}
+            {% if page_num %}
+                {% if page_num == pagination.page %}
+                <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main_page', page=page_num, category=request.args.get('category'), status=request.args.get('status'), purchase_date_start=request.args.get('purchase_date_start'), purchase_date_end=request.args.get('purchase_date_end')) }}">{{ page_num }}</a>
+                </li>
+                {% endif %}
+            {% else %}
+            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('main_page', page=pagination.next_num, category=request.args.get('category'), status=request.args.get('status'), purchase_date_start=request.args.get('purchase_date_start'), purchase_date_end=request.args.get('purchase_date_end')) }}" aria-label="Next">
+                <span aria-hidden="true">»</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+{% else %}
+<div class="alert alert-info" role="alert">
+    Оборудование не найдено по заданным критериям.
+</div>
+{% endif %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Удаление оборудования</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить оборудование <span id="modalAssetName" class="fw-bold"></span>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
+                <form id="deleteForm" method="POST" action="">
+                    {{ form.hidden_tag() }}  <!-- This automatically includes the CSRF token -->
+                    <button type="submit" class="btn btn-danger">Да</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+
+<script>
+    // Initialize datepicker
+    $(document).ready(function() {
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            language: 'ru',
+            autoclose: true,
+            todayHighlight: true
+        });
+    });
+
+    // Handle delete modal
+    var deleteModal = document.getElementById('deleteModal')
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        var button = event.relatedTarget
+        // Extract info from data-bs-* attributes
+        var assetId = button.getAttribute('data-asset-id')
+        var assetName = button.getAttribute('data-asset-name')
+        
+        // Update the modal's content.
+        var modalAssetName = deleteModal.querySelector('#modalAssetName')
+        var deleteForm = deleteModal.querySelector('#deleteForm')
+
+        modalAssetName.textContent = assetName
+        deleteForm.action = "{{ url_for('delete_equipment', asset_id=0) }}".replace('/0', '/' + assetId)
+    })
+</script>
+{% endblock %}
