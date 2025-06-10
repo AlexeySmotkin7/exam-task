@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">{% if asset %}Редактировать оборудование{% else %}Добавить оборудование{% endif %}</h1>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control", placeholder="Название оборудования") }}
+                {% for error in form.name.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.inventory_number.label(class="form-label") }}
+                {{ form.inventory_number(class="form-control", placeholder="Уникальный инвентарный номер") }}
+                {% for error in form.inventory_number.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.category_id.label(class="form-label") }}
+                {{ form.category_id(class="form-select") }}
+                {% for error in form.category_id.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.purchase_date.label(class="form-label") }}
+                {{ form.purchase_date(class="form-control datepicker", placeholder="ГГГГ-ММ-ДД") }}
+                {% for error in form.purchase_date.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.cost.label(class="form-label") }}
+                {{ form.cost(class="form-control", placeholder="Стоимость (например, 1234.56)") }}
+                {% for error in form.cost.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.status.label(class="form-label d-block") }}
+                {% for subfield in form.status %}
+                    <div class="form-check form-check-inline">
+                        {{ subfield(class="form-check-input") }}
+                        {{ subfield.label(class="form-check-label") }}
+                    </div>
+                {% endfor %}
+                {% for error in form.status.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.notes.label(class="form-label") }}
+                {{ form.notes(class="form-control", rows="3", placeholder="Дополнительные примечания") }}
+                {% for error in form.notes.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.photo.label(class="form-label") }}
+                {{ form.photo(class="form-control") }}
+                {% for error in form.photo.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+                {% if asset and asset.image %}
+                    <div class="mt-2">
+                        <small class="text-muted">Текущая фотография:</small><br>
+                        <img src="{{ url_for('static', filename='uploads/' + asset.image.filename) }}" class="img-thumbnail" style="max-width: 200px; max-height: 200px;" alt="Текущая фотография">
+                    </div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                {{ form.responsible_persons.label(class="form-label") }}
+                {{ form.responsible_persons(class="form-select", size="5", multiple=True) }}
+                {% for error in form.responsible_persons.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+                <small class="form-text text-muted">Используйте Ctrl/Cmd + клик для выбора нескольких.</small>
+            </div>
+            
+            {{ form.submit }}
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.ru.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+
+<script>
+    $(document).ready(function() {
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            language: 'ru',
+            autoclose: true,
+            todayHighlight: true
+        });
+    });
+</script>
+{% endblock %}
