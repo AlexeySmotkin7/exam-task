@@ -19,22 +19,24 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main_page') }}">Главная</a>
-                    </li>
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main_page') }}">Оборудование</a> {# Ссылка на основную страницу, где будет список #}
-                    </li>
-                    {% if current_user.is_admin or current_user.is_tech_specialist %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main_page') }}#maintenance_section">Обслуживание</a> {# Ссылка на раздел обслуживания на главной #}
-                    </li>
-                    {% endif %}
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main_page') }}">Главная</a>
+                        </li>
+                        {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main_page') }}">Оборудование</a>
+                        </li>
+                        {% if current_user.is_admin or current_user.is_tech_specialist %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main_page') }}#add-maintenance">Обслуживание</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item"> {# Новая ссылка на сканер #}
+                            <a class="nav-link" href="{{ url_for('qr_scanner') }}">Сканировать QR</a>
+                        </li>
+                        {% endif %}
+                    </ul>                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item">
                         {% if current_user.is_authenticated %}
                         <a class="nav-link" href="{{ url_for('logout') }}">Выход ({{ current_user.username }})</a>

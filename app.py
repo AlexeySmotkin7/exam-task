@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -339,3 +339,75 @@ def view_equipment(asset_id):
                            asset=asset, 
                            maintenance_form=maintenance_form, 
                            current_user=current_user)
+
+
+@app.route('/equipment/delete/<int:asset_id>', methods=['POST'])
+@role_required('administrator')
+def delete_equipment(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    
+    try:
+        # Сохраняем информацию об изображении до удаления оборудования
+        image_to_delete = asset.image
+        
+        db.session.delete(asset)
+        db.session.commit()
+
+        # Если изображение было привязано к этому оборудованию и больше ни к чему не привязано, удаляем файл и запись об изображении
+        if image_to_delete and image_to_delete.assets.count() == 0:
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_to_delete.filename)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            db.session.delete(image_to_delete)
+            db.session.commit() # Отдельный коммит для удаления записи об изображении
+
+        flash(f'Оборудование "{asset.name}" успешно удалено!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при удалении оборудования: {e}', 'danger')
+    
+    return redirect(url_for('main_page'))
+
+@app.route('/generate_qr_code/<string:inventory_number>')
+def generate_qr_code(inventory_number):
+    asset = Asset.query.filter_by(inventory_number=inventory_number).first_or_404()
+    
+    # URL, который будет закодирован в QR
+    qr_data_url = url_for('view_equipment', asset_id=asset.id, _external=True)
+
+    # Генерация QR-кода
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_data_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    qr_filename = f"qr_{secure_filename(inventory_number)}.png"
+    qr_filepath = os.path.join(app.config['QR_CODE_FOLDER'], qr_filename)
+    
+    # Сохраняем QR-код, если его нет
+    if not os.path.exists(qr_filepath):
+        img.save(qr_filepath)
+
+    # Возвращаем файл QR-кода
+    return send_from_directory(app.config['QR_CODE_FOLDER'], qr_filename)
+
+
+@app.route('/qr_scanner')
+def qr_scanner():
+    return render_template('qr_scanner.html', title='Сканер QR-кодов')
+
+# Дополнительный маршрут, если QR-код содержит только инвентарный номер, а не полный URL
+@app.route('/equipment/view_by_inventory/<string:inventory_num>')
+@login_required # Только для авторизованных, как указано в задании
+def view_equipment_by_inventory(inventory_num):
+    asset = Asset.query.filter_by(inventory_number=inventory_num).first()
+    if asset:
+        return redirect(url_for('view_equipment', asset_id=asset.id))
+    else:
+        flash(f'Оборудование с инвентарным номером "{inventory_num}" не найдено.', 'danger')
+        return redirect(url_for('main_page'))

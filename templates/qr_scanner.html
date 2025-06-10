@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Сканер QR-кодов оборудования</h1>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <p class="lead">Наведите камеру на QR-код оборудования.</p>
+                <div id="qr-reader" style="width:100%;"></div>
+                <div id="qr-reader-results" class="mt-3 fs-5 fw-bold text-success"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- html5-qrcode CDN -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    function onScanSuccess(decodedText, decodedResult) {
+        // Handle the scanned code as you like, for example:
+        console.log(`Code matched = ${decodedText}`, decodedResult);
+        document.getElementById('qr-reader-results').textContent = `Сканировано: ${decodedText}`;
+
+        // Stop scanning after a successful scan
+        html5QrcodeScanner.clear();
+
+        // Redirect based on the decoded text
+        if (decodedText.startsWith("{{ url_for('view_equipment', asset_id=0, _external=True) | replace('0', '') }}")) {
+            // If the QR code contains the full URL to the asset page
+            window.location.href = decodedText;
+        } else {
+            // If the QR code contains only the inventory number
+            // Ensure this URL is correctly formed based on your Flask app's routing
+            window.location.href = "{{ url_for('view_equipment_by_inventory', inventory_num='') }}" + decodedText;
+        }
+    }
+
+    function onScanFailure(error) {
+        // handle scan failure, usually better to ignore and keep scanning.
+        // console.warn(`Code scan error = ${error}`);
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader",
+        { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+        /* verbose= */ false
+    );
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+</script>
+{% endblock %}
